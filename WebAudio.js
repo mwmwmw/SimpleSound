@@ -1,3 +1,17 @@
+// SAFARI Polyfills
+if(!window.AudioBuffer.prototype.copyToChannel) {
+	window.AudioBuffer.prototype.copyToChannel = function copyToChannel (buffer,channel) {
+		this.getChannelData(channel).set(buffer);
+	}
+}
+if(!window.AudioBuffer.prototype.copyFromChannel) {
+	window.AudioBuffer.prototype.copyFromChannel = function copyFromChannel (buffer,channel) {
+		buffer.set(this.getChannelData(channel));
+	}
+}
+
+
+
 class Effect {
 
 	constructor (context) {
@@ -27,44 +41,44 @@ class Effect {
 }
 
 class Sample {
-    constructor (context) {
-      this.context = context;
-      this.buffer = this.context.createBufferSource();
-      this.buffer.start();
-      this.sampleBuffer = null
-      this.rawBuffer = null;
-      this.loaded = false;
-      this.output = this.context.createGain();
-      this.output.gain.value = 0.1;
-    }
-  
-    play () {
-    	if(this.loaded) {
-        this.buffer.stop();
-        this.buffer = this.context.createBufferSource();
-        this.buffer.buffer = this.sampleBuffer;
-        this.buffer.connect(this.output);
-        this.buffer.start(this.context.currentTime);
-      }
-    }
-  
-    connect(input) {
-      this.output.connect(input);
-    }
-  
-  	load (path) {
-      this.loaded = false;
-		return fetch(path)
-			.then((response) => response.arrayBuffer())
-			.then((myBlob) => {
-      
-				return this.context.decodeAudioData(myBlob);
+	constructor (context) {
+		this.context = context;
+		this.buffer = this.context.createBufferSource();
+		this.buffer.start();
+		this.sampleBuffer = null
+		this.rawBuffer = null;
+		this.loaded = false;
+		this.output = this.context.createGain();
+		this.output.gain.value = 0.1;
+	}
+
+	play () {
+		if(this.loaded) {
+			this.buffer = this.context.createBufferSource();
+			this.buffer.buffer = this.sampleBuffer;
+			this.buffer.connect(this.output);
+			this.buffer.start(this.context.currentTime);
+		}
+	}
+
+	connect(input) {
+		this.output.connect(input);
+	}
+
+	load (path) {
+		this.loaded = false;
+	return fetch(path)
+		.then((response) => response.arrayBuffer())
+		.then((myBlob) => {
+			return new Promise((resolve, reject)=>{
+				this.context.decodeAudioData(myBlob, resolve, reject);	
 			})
-			.then((buffer) => {
-        this.sampleBuffer = buffer;
-        this.loaded = true;
-				return this;
-			})
+		})
+		.then((buffer) => {
+			this.sampleBuffer = buffer;
+			this.loaded = true;
+			return this;
+		})
 	}
 }
 
